@@ -4224,47 +4224,7 @@ server <- function(input, output, session) {
   })
   
   # Handle save room image
-  observeEvent(input$save_room_image, {
-    req(user$authenticated, rv$selected_room)
-    
-    tryCatch({
-      if (is.null(rv$temp_image_data) && is.null(rv$current_room_image)) {
-        showNotification("Please select an image to upload.", type = "warning", duration = 3)
-        return()
-      }
-      
-      if (!is.null(rv$temp_image_data)) {
-        # Save new image
-        success <- save_room_image(rv$selected_room, 
-                                   rv$temp_image_data$datapath, 
-                                   rv$temp_image_data$name)
-        
-        if (success) {
-          showNotification("Image uploaded successfully!", type = "default", duration = 3)
-          
-          # Clear temporary data
-          rv$temp_image_data <- NULL
-          
-          # Update current image
-          rv$current_room_image <- get_room_image(rv$selected_room)
-          
-          # Update last db update to refresh displays
-          rv$last_db_update <- Sys.time()
-          
-          # Close the modal
-          removeModal()
-          
-        } else {
-          showNotification("Failed to upload image.", type = "error", duration = 3)
-        }
-      } else {
-        showNotification("No new image selected.", type = "warning", duration = 3)
-      }
-      
-    }, error = function(e) {
-      showNotification(paste("Error saving image:", e$message), type = "error", duration = 5)
-    })
-  })
+  
 }
 
 # Run the application
