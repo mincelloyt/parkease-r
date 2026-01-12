@@ -1,14 +1,16 @@
-# security.R
+# security.R - Password hashing functions
 library(openssl)
 
-# Password hashing functions
+# Hash a password
 hash_password <- function(password) {
-  # Use SHA-256 for demo (in production, use bcrypt with R package 'bcrypt')
-  sha256(password)
+  # Use SHA-256 hashing with a salt
+  hash <- sha256(paste0("hotel_salt_", password))
+  return(as.character(hash))
 }
 
-# Verify password
-verify_password <- function(input_password, stored_hash) {
-  input_hash <- sha256(input_password)
-  return(input_hash == stored_hash)
+# Verify a password
+verify_password <- function(password, hash) {
+  # Hash the provided password and compare
+  test_hash <- hash_password(password)
+  return(identical(test_hash, hash))
 }
