@@ -352,6 +352,53 @@ login_ui <- fluidPage(
     $('.login-error').slideUp(200);
   });
 ")),
+  # Add this to your UI (in the navbar_css section or as a separate tags$script):
+  tags$script(HTML("
+  $(document).ready(function() {
+    // Force selectize dropdowns to have highest z-index
+    $(document).on('click', '.selectize-input', function() {
+      var $dropdown = $(this).siblings('.selectize-dropdown');
+      $dropdown.css('z-index', '100001');
+    });
+    
+    // Fix for payment status dropdown specifically
+    $(document).on('focus', '#payment_status + .selectize-control .selectize-input', function() {
+      $('.selectize-dropdown').css('z-index', '100001');
+    });
+    
+    // Also fix when date picker opens
+    $(document).on('show', '.datepicker', function() {
+      $('.selectize-dropdown').css('z-index', '100001');
+    });
+  });
+")),
+  # In your UI, add this JavaScript:
+  tags$script(HTML("
+  $(document).ready(function() {
+    // Force close any open date pickers when room modal opens
+    $(document).on('click', '.room-card', function() {
+      // Close any open date pickers
+      $('.datepicker').hide();
+      $('.bootstrap-datetimepicker-widget').hide();
+      $('.datepicker-dropdown').hide();
+    });
+    
+    // Prevent date pickers from opening in Rooms tab when not needed
+    $('#rooms-tab').on('click', function() {
+      // Close any date pickers that might be open
+      $('.datepicker').hide();
+      $('.bootstrap-datetimepicker-widget').hide();
+    });
+    
+    // Ensure date pickers are closed when opening room details modal
+    Shiny.addCustomMessageHandler('closeDatePickers', function(message) {
+      $('.datepicker').hide();
+      $('.bootstrap-datetimepicker-widget').hide();
+      $('.datepicker-dropdown').hide();
+      $('.dropdown-menu').hide();
+    });
+  });
+")), 
   
   div(class = "login-container",
       div(class = "login-card",
@@ -646,6 +693,157 @@ navbar_css <- tags$head(
     .room-badge-deluxe { background-color: #2196F3; color: white; }
     .room-badge-suite { background-color: #9C27B0; color: white; }
     .room-badge-presidential { background-color: #FF9800; color: white; }
+    
+    /* ========== CRITICAL Z-INDEX FIXES ========== */
+    /* Fix payment status dropdown in reservations tab */
+    .selectize-dropdown {
+      z-index: 10050 !important;
+    }
+    
+    .selectize-dropdown-content {
+      z-index: 10050 !important;
+    }
+    
+    .selectize-input {
+      z-index: 10049 !important;
+    }
+    
+    .selectize-control.single .selectize-input,
+    .selectize-control.single .selectize-input.input-active {
+      z-index: 10049 !important;
+    }
+    
+    /* Make sure all dropdowns are above date pickers */
+    .selectize-dropdown,
+    .bootstrap-select .dropdown-menu,
+    .select2-container--open .select2-dropdown {
+      z-index: 1060 !important;
+    }
+    
+    /* Fix select inputs specifically in reservations tab */
+    #reservations-tab .selectize-dropdown {
+      z-index: 99999 !important;
+    }
+    
+    #reservations-tab .selectize-control {
+      position: relative;
+      z-index: 9999;
+    }
+    
+    /* Ensure all form controls in reservations tab have proper z-index */
+    #reservations-tab .form-control,
+    #reservations-tab .selectize-control,
+    #reservations-tab .selectize-input {
+      position: relative;
+      z-index: 100;
+    }
+    
+    /* Higher z-index for dropdowns when opened */
+    #reservations-tab .selectize-dropdown {
+      z-index: 100000 !important;
+    }
+    
+    #reservations-tab .bootstrap-select .dropdown-menu {
+      z-index: 100000 !important;
+    }
+  "))
+)
+
+# Add to navbar_css or create separate CSS - UPDATE THIS ENTIRE BLOCK:
+navbar_css <- tags$head(
+  tags$style(HTML("
+    /* Fix date picker calendar z-index */
+    .datepicker {
+      z-index: 9999 !important;
+    }
+    
+    .bootstrap-datetimepicker-widget {
+      z-index: 9999 !important;
+    }
+    
+    /* Specific fix for Rooms tab date pickers */
+    .shiny-date-input {
+      z-index: 1000 !important;
+    }
+    
+    /* Ensure calendar dropdown is on top */
+    .datepicker-dropdown {
+      z-index: 10000 !important;
+    }
+    
+    /* Fix for modal backdrop interference */
+    .modal-backdrop {
+      z-index: 999 !important;
+    }
+    
+    .modal {
+      z-index: 1000 !important;
+    }
+    
+    /* Room cards modal specific fixes */
+    #shiny-modal .datepicker {
+      z-index: 99999 !important;
+    }
+    
+    #shiny-modal .bootstrap-datetimepicker-widget {
+      z-index: 99999 !important;
+    }
+    
+    /* Ensure room detail modal doesn't interfere */
+    .room-details-modal .datepicker {
+      z-index: 99999 !important;
+    }
+    
+    /* ===== CRITICAL FIX FOR PAYMENT STATUS DROPDOWN ===== */
+    /* Make selectize dropdowns appear above date pickers */
+    .selectize-dropdown {
+      z-index: 10050 !important;
+    }
+    
+    .selectize-dropdown-content {
+      z-index: 10050 !important;
+    }
+    
+    .selectize-input {
+      z-index: 10049 !important;
+    }
+    
+    /* Specific fix for payment status in reservations */
+    #payment_status + .selectize-control .selectize-dropdown {
+      z-index: 100000 !important;
+    }
+    
+    #payment_status + .selectize-control {
+      position: relative;
+      z-index: 9999;
+    }
+    
+    /* Force higher z-index for all selectize in reservations tab */
+    #reservations-tab .selectize-dropdown {
+      z-index: 100001 !important;
+    }
+    
+    #reservations-tab .selectize-input {
+      position: relative;
+      z-index: 100000 !important;
+    }
+    
+    /* Bootstrap select dropdown fixes */
+    .bootstrap-select .dropdown-menu {
+      z-index: 10050 !important;
+    }
+    
+    /* Higher specificity for payment status */
+    select#payment_status + .selectize-control .selectize-dropdown {
+      z-index: 100001 !important;
+    }
+    
+    /* Make sure the dropdown appears above everything */
+    .selectize-dropdown,
+    .bootstrap-select .dropdown-menu {
+      position: absolute !important;
+      z-index: 100001 !important;
+    }
   "))
 )
 # Add to navbar_css or create separate CSS

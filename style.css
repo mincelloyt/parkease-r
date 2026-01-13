@@ -1848,3 +1848,118 @@ input#search_input {
   font-size: 14px;
   transition: all 0.3s ease;
 }
+/* ===== CRITICAL Z-INDEX FIX FOR ROOM MODAL ===== */
+
+/* Room modal should be on top of everything */
+#shiny-modal {
+  z-index: 99999 !important;
+}
+
+.modal-backdrop {
+  z-index: 99998 !important;
+}
+
+/* Force date picker dropdowns to be below modal */
+.datepicker {
+  z-index: 99997 !important;
+}
+
+.datepicker-dropdown {
+  z-index: 99997 !important;
+}
+
+.bootstrap-datetimepicker-widget {
+  z-index: 99997 !important;
+}
+
+/* Specifically target the date pickers in Rooms tab */
+#room_check_in + .input-group .datepicker,
+#room_check_out + .input-group .datepicker {
+  z-index: 99997 !important;
+}
+
+/* When modal is open, make sure date pickers in the modal content stay above */
+#shiny-modal .datepicker {
+  z-index: 100000 !important;
+}
+
+#shiny-modal .bootstrap-datetimepicker-widget {
+  z-index: 100000 !important;
+}
+
+/* Ensure modal content is above backdrop */
+.modal-content {
+  z-index: 100001 !important;
+  position: relative;
+}
+
+/* Fix for selectize dropdowns in modal */
+#shiny-modal .selectize-dropdown {
+  z-index: 100002 !important;
+}
+
+/* Make sure the Rooms tab date pickers stay in their proper place */
+#rooms-tab .datepicker-dropdown {
+  z-index: 9999 !important;
+}
+
+#rooms-tab .datepicker {
+  z-index: 9999 !important;
+}
+
+/* Override any inline styles that might be causing issues */
+#shiny-modal {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  overflow-y: auto !important;
+}
+
+/* Ensure date inputs in Rooms tab have proper stacking context */
+#room_check_in, #room_check_out {
+  position: relative;
+  z-index: 100 !important;
+}
+
+/* Alternative solution: Make the date picker wrapper have lower z-index */
+.input-group.date {
+  position: relative;
+  z-index: 100 !important;
+}
+
+/* The actual calendar dropdown */
+.input-group.date .bootstrap-datetimepicker-widget {
+  z-index: 9999 !important;
+}
+
+/* When opening room modal, we need to override the date pickers */
+body.modal-open .datepicker {
+  z-index: 1030 !important; /* Lower than modal's 1040 */
+}
+
+body.modal-open .bootstrap-datetimepicker-widget {
+  z-index: 1030 !important;
+}
+
+/* Make sure room modal's z-index is higher than any date picker */
+.modal.fade.show {
+  z-index: 1040 !important;
+}
+
+/* Fix for the date picker dropdown specifically */
+.bootstrap-datetimepicker-widget.dropdown-menu {
+  z-index: 1035 !important;
+}
+
+/* When modal is open, make sure its date pickers are on top */
+.modal-open .bootstrap-datetimepicker-widget {
+  z-index: 1050 !important;
+}
+
+/* Simple guaranteed fix: Hide date pickers when modal is open */
+body.modal-open .datepicker.dropdown-menu,
+body.modal-open .bootstrap-datetimepicker-widget.dropdown-menu {
+  display: none !important;
+}
