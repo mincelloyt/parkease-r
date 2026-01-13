@@ -3307,6 +3307,7 @@ server <- function(input, output, session) {
   })
   
   # Generate report button handler - FIXED VERSION
+  # Generate report button handler - FIXED VERSION
   observeEvent(input$generate_report, {
     req(user$authenticated)
     
@@ -3317,7 +3318,16 @@ server <- function(input, output, session) {
       # Force refresh of all charts
       rv$refresh_counter <- rv$refresh_counter + 1
       
-      showNotification("Report generated successfully!", type = "default", duration = 3)
+      # Show notification with selected date range
+      start_date <- input$report_start_date %||% (Sys.Date() - 365)
+      end_date <- input$report_end_date %||% Sys.Date()
+      
+      showNotification(
+        paste("Report generated for period:", 
+              format(start_date, "%b %d, %Y"), "to", 
+              format(end_date, "%b %d, %Y")), 
+        type = "default", duration = 3
+      )
       
     }, error = function(e) {
       showNotification(paste("Error generating report:", e$message), type = "error", duration = 5)
@@ -3412,6 +3422,7 @@ server <- function(input, output, session) {
   })
   
   # Monthly Revenue Trends - Line Chart
+  # Monthly Revenue Trends - Line Chart - FIXED VERSION
   output$monthly_revenue_trends <- renderPlot({
     req(user$authenticated)
     
@@ -3431,27 +3442,48 @@ server <- function(input, output, session) {
       start_date <- input$report_start_date %||% (Sys.Date() - 365)
       end_date <- input$report_end_date %||% Sys.Date()
       
+      # First, generate all months in the range
+      all_months <- seq(from = as.Date(format(start_date, "%Y-%m-01")), 
+                        to = as.Date(format(end_date, "%Y-%m-01")), 
+                        by = "month")
+      
+      # Format months for display
+      month_labels <- format(all_months, "%Y-%m")
+      
+      # Get revenue data
       query <- "
-        SELECT 
-          strftime('%Y-%m', check_in) as month,
-          SUM(total_bill) as revenue,
-          COUNT(*) as bookings
-        FROM reservations 
-        WHERE payment_status = 'Paid'
-          AND check_out >= ? AND check_in <= ?
-        GROUP BY month
-        ORDER BY month
-      "
+      SELECT 
+        strftime('%Y-%m', check_in) as month,
+        SUM(total_bill) as revenue,
+        COUNT(*) as bookings
+      FROM reservations 
+      WHERE payment_status = 'Paid'
+        AND check_in >= ? 
+        AND check_in <= ?
+      GROUP BY month
+      ORDER BY month
+    "
       
       data <- dbGetQuery(conn, query, params = list(
         as.character(start_date),
         as.character(end_date)
       ))
       
-      if (nrow(data) > 1) {
+      if (nrow(data) > 0) {
+        # Merge with all months to ensure we have all months in the range
+        all_data <- data.frame(month = month_labels)
+        merged_data <- merge(all_data, data, by = "month", all.x = TRUE)
+        
+        # Replace NA with 0
+        merged_data$revenue[is.na(merged_data$revenue)] <- 0
+        merged_data$bookings[is.na(merged_data$bookings)] <- 0
+        
+        # Order by month
+        merged_data <- merged_data[order(merged_data$month), ]
+        
         # Create line chart
         par(mar = c(5, 4, 4, 4))
-        plot(1:nrow(data), data$revenue, 
+        plot(1:nrow(merged_data), merged_data$revenue, 
              type = "o",
              col = "#2196F3",
              lwd = 2,
@@ -3461,33 +3493,47 @@ server <- function(input, output, session) {
              xlab = "Month",
              ylab = "Revenue (₱)",
              xaxt = "n",
-             ylim = c(0, max(data$revenue) * 1.1))
+             ylim = c(0, max(merged_data$revenue, na.rm = TRUE) * 1.1))
         
-        # Add month labels
-        axis(1, at = 1:nrow(data), labels = data$month, las = 2, cex.axis = 0.8)
+        # Add month labels (format nicely)
+        month_display <- format(as.Date(paste0(merged_data$month, "-01")), "%b %Y")
+        axis(1, at = 1:nrow(merged_data), labels = month_display, las = 2, cex.axis = 0.8)
         
         # Add revenue points
-        points(1:nrow(data), data$revenue, pch = 19, col = "#2196F3", cex = 1.5)
+        points(1:nrow(merged_data), merged_data$revenue, pch = 19, col = "#2196F3", cex = 1.5)
         
         # Add grid
         grid()
         
-        # Add trend line
-        if (nrow(data) > 2) {
-          abline(lm(data$revenue ~ seq_len(nrow(data))), 
-                 col = "#FF9800", lwd = 2, lty = 2)
-          legend("topleft", legend = c("Revenue", "Trend"), 
-                 col = c("#2196F3", "#FF9800"), lwd = 2, lty = c(1, 2))
+        # Add revenue values on the points
+        if (nrow(merged_data) <= 12) {  # Only show values if not too many points
+          text(1:nrow(merged_data), merged_data$revenue, 
+               labels = format_currency(merged_data$revenue),
+               pos = 3, cex = 0.7, col = "#2196F3")
+        }
+        
+        # Add trend line if we have at least 2 months with data
+        months_with_data <- sum(merged_data$revenue > 0)
+        if (months_with_data >= 2) {
+          trend_indices <- which(merged_data$revenue > 0)
+          trend_values <- merged_data$revenue[merged_data$revenue > 0]
+          
+          if (length(trend_indices) >= 2) {
+            abline(lm(trend_values ~ trend_indices), 
+                   col = "#FF9800", lwd = 2, lty = 2)
+            legend("topleft", legend = c("Revenue", "Trend"), 
+                   col = c("#2196F3", "#FF9800"), lwd = 2, lty = c(1, 2))
+          }
         }
         
         # Add total revenue annotation
-        total_rev <- sum(data$revenue)
+        total_rev <- sum(merged_data$revenue, na.rm = TRUE)
         mtext(paste("Total:", format_currency(total_rev)), 
               side = 3, col = "#4CAF50", cex = 0.9)
         
       } else {
         plot.new()
-        text(0.5, 0.5, "Insufficient data for trend analysis\n(Need 2+ months)", 
+        text(0.5, 0.5, "No revenue data available for the selected period", 
              cex = 1.2, col = "gray")
       }
     })
